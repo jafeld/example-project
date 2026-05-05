@@ -9,21 +9,21 @@ fun seedDemoData(connection: Connection) {
         return
     }
 
-    insertNode(connection, "A", "Core router A", "ROUTER")
-    insertNode(connection, "B", "Distribution switch B", "SWITCH")
-    insertNode(connection, "C", "Distribution switch C", "SWITCH")
-    insertNode(connection, "D", "Access switch D", "SWITCH")
+    insertNode(connection, id = "A", name = "Core router A", type = "ROUTER")
+    insertNode(connection, id = "B", name = "Distribution switch B",  type = "SWITCH")
+    insertNode(connection, id = "C", name = "Distribution switch C",  type = "SWITCH")
+    insertNode(connection, id = "D", name = "Access switch D",  type = "SWITCH")
 
-    insertLink(connection, "A", "B")
-    insertLink(connection, "A", "C")
-    insertLink(connection, "B", "C")
-    insertLink(connection, "C", "D")
+    insertLink(connection, source = "A", target = "B")
+    insertLink(connection, source = "A", target = "C")
+    insertLink(connection, source = "B", target = "C")
+    insertLink(connection, source = "C", target = "D")
 
     val startTime = Instant.parse("2026-05-05T10:00:00Z")
 
-    insertEvent(connection, "A", "C", "LINK_DOWN", startTime)
-    insertEvent(connection, "B", "C", "NODE_UNREACHABLE", startTime.plusSeconds(1))
-    insertEvent(connection, "D", "C", "NODE_UNREACHABLE", startTime.plusSeconds(2))
+    insertEvent(connection, node = "A", target = "C", type = "LINK_DOWN", time = startTime)
+    insertEvent(connection, node = "B", target = "C", type = "NODE_UNREACHABLE", time = startTime.plusSeconds(1))
+    insertEvent(connection, node = "D", target = "C", type = "NODE_UNREACHABLE", time = startTime.plusSeconds(2))
 }
 
 private fun hasNodes(connection: Connection): Boolean {

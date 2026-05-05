@@ -19,7 +19,7 @@ class TopologyLoader(
                 """.trimIndent()
             ).use { resultSet ->
                 while (resultSet.next()) {
-                    nodes.add(Node(resultSet.getString("id")))
+                    nodes.add(Node(id = resultSet.getString("id")))
                 }
             }
         }

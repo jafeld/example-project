@@ -15,7 +15,7 @@ class RootCauseAnalyzer(
             val weight = weights[event.type] ?: 0 // Default to 0 if weight is undefined
             val targetNode = event.target ?: event.node // If target exists, add score to target, otherwise add score to self
 
-            scores[targetNode] = scores.getOrDefault(targetNode, 0) + weight // add the score to the node's total
+            scores[targetNode] = scores.getOrDefault(key = targetNode, defaultValue = 0) + weight // add the score to the node's total
         }
 
         return scores
