@@ -1,5 +1,14 @@
-package org.example.org.example
+package org.example
+
+import org.example.database.Database
+import org.example.database.createTables
+import org.example.database.seedDemoData
 
 fun main() {
-    println("Example project started")
+    Database.startServer()
+
+    Database.connect().use { connection ->
+        createTables(connection)
+        seedDemoData(connection)
+    }
 }
