@@ -1,0 +1,22 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+build/
+
+# Kotlin
+.kotlin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database (later)
+data/
+*.mv.db
+*.trace.db
