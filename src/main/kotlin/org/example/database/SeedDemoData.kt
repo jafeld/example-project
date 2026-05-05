@@ -1,6 +1,8 @@
 package org.example.database
 
 import java.sql.Connection
+import java.sql.Timestamp
+import java.time.Instant
 
 fun seedDemoData(connection: Connection) {
     if (hasNodes(connection)) {
@@ -16,6 +18,12 @@ fun seedDemoData(connection: Connection) {
     insertLink(connection, "A", "C")
     insertLink(connection, "B", "C")
     insertLink(connection, "C", "D")
+
+    val startTime = Instant.parse("2026-05-05T10:00:00Z")
+
+    insertEvent(connection, "A", "C", "LINK_DOWN", startTime)
+    insertEvent(connection, "B", "C", "NODE_UNREACHABLE", startTime.plusSeconds(1))
+    insertEvent(connection, "D", "C", "NODE_UNREACHABLE", startTime.plusSeconds(2))
 }
 
 private fun hasNodes(connection: Connection): Boolean {
@@ -59,6 +67,27 @@ private fun insertLink(
     ).use { statement ->
         statement.setString(1, source)
         statement.setString(2, target)
+        statement.executeUpdate()
+    }
+}
+
+private fun insertEvent(
+    connection: Connection,
+    node: String,
+    target: String?,
+    type: String,
+    time: Instant
+) {
+    connection.prepareStatement(
+        """
+        INSERT INTO events (node_id, target_node_id, event_type, event_time)
+        VALUES (?, ?, ?, ?)
+        """.trimIndent()
+    ).use { statement ->
+        statement.setString(1, node)
+        statement.setString(2, target)
+        statement.setString(3, type)
+        statement.setTimestamp(4, Timestamp.from(time))
         statement.executeUpdate()
     }
 }
