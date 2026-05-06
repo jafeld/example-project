@@ -13,7 +13,7 @@ import java.time.Instant
 class ScoreCalculatorTest : FreeSpec({
 
     val scoreCalculator = ScoreCalculator(
-        weights = RootCauseAnalyzer.defaultWeights()
+        config = ScoringConfig()
     )
 
     "calculateScores" - {
