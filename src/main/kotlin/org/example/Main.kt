@@ -9,7 +9,7 @@ import org.example.database.createTables
 import org.example.database.seedDemoData
 import org.example.domain.EventType
 import org.example.domain.NetworkGraph
-import org.example.domain.Node
+import org.example.domain.RootCause
 import org.example.domain.RootCauseResult
 
 fun main() {
@@ -35,61 +35,30 @@ fun main() {
         )
 
         val analyzer = RootCauseAnalyzer(weights = weights)
-        val scoreCalculator = ScoreCalculator(weights = weights)
 
-        val simpleScores = scoreCalculator.calculateSimpleScores(events = events)
-
-        val topologyScores = scoreCalculator.calculateTopologyAwareScores(
-            events = events,
-            graph = graph
-        )
-
-        val timeScores = scoreCalculator.calculateTimeAwareScores(events = events)
-
-        val timeAndTopologyScores = scoreCalculator.calculateTimeAndTopologyAwareScores(
-            events = events,
-            graph = graph
-        )
-
-        println("Simple scores (baseline)")
-        printScores(scores = simpleScores)
-
-        println()
-        println("Topology-aware scores")
-        printScores(scores = topologyScores)
-
-        println()
-        println("Time-aware scores")
-        printScores(scores = timeScores)
-
-        println()
-        println("Time + Topology-aware scores")
-        printScores(scores = timeAndTopologyScores)
-
-        println()
         val rootCauseResults = analyzer.findRootCauseResults(
             events = events,
-            graph = graph
+            graph = graph,
+            maxCandidates = 3
         )
 
-        println()
         println("Root cause candidates")
         printRootCauseResults(results = rootCauseResults)
     }
 }
 
-private fun printScores(scores: Map<Node, Double>) {
+private fun printScores(scores: Map<RootCause, Double>) {
     scores.entries
         .sortedByDescending { it.value }
-        .forEach { (node, score) ->
-            println("${node.id}: ${"%.2f".format(score)}")
+        .forEach { (rootCause, score) ->
+            println("$rootCause: ${"%.2f".format(score)}")
         }
 }
 
 private fun printRootCauseResults(results: List<RootCauseResult>) {
     results.forEach { result ->
         println(
-            "${result.node.id}: " +
+            "${result.rootCause}: " +
                     "score=${"%.2f".format(result.score)}, " +
                     "confidence=${"%.2f".format(result.confidence)}, " +
                     "reason=${result.reason}"

@@ -3,7 +3,7 @@ package org.example.analyzer
 import org.example.domain.EventType
 import org.example.domain.NetworkEvent
 import org.example.domain.NetworkGraph
-import org.example.domain.Node
+import org.example.domain.RootCause
 import org.example.domain.RootCauseResult
 
 class RootCauseAnalyzer(
@@ -11,18 +11,11 @@ class RootCauseAnalyzer(
 ) {
     private val scoreCalculator = ScoreCalculator(weights = weights)
 
-    // Initial function to return highest scoring node as likely root cause
-    fun findRootCause(events: List<NetworkEvent>): Node? {
-        val scores = scoreCalculator.calculateSimpleScores(events = events)
-        return scores.maxByOrNull { it.value }?.key
-    }
-
-    // Uses improved scoring approach with time and topology awareness
     fun findRootCause(
         events: List<NetworkEvent>,
         graph: NetworkGraph
-    ): Node? {
-        val scores = scoreCalculator.calculateTimeAndTopologyAwareScores(
+    ): RootCause? {
+        val scores = scoreCalculator.calculateScores(
             events = events,
             graph = graph
         )
@@ -32,18 +25,62 @@ class RootCauseAnalyzer(
 
     fun findRootCauseResults(
         events: List<NetworkEvent>,
-        graph: NetworkGraph
+        graph: NetworkGraph,
+        maxCandidates: Int = 3
     ): List<RootCauseResult> {
-        val scores = scoreCalculator.calculateTimeAndTopologyAwareScores(
+        val scores = scoreCalculator.calculateScores(
             events = events,
             graph = graph
         )
 
         return createRootCauseResults(
             scores = scores,
-            reason = "Score calculated using time and topology aware scoring" // ToDo: Vague, improve better reasoning when possible
+            maxCandidates = maxCandidates
         )
     }
+
+    private fun createRootCauseResults(
+        scores: Map<RootCause, Double>,
+        maxCandidates: Int = 3
+    ): List<RootCauseResult> {
+        val totalScore = scores.values.sum()
+
+        if (totalScore == 0.0) {
+            return emptyList()
+        }
+
+        return scores.entries
+            .sortedByDescending { it.value }
+            .take(maxCandidates)
+            .map { (rootCause, score) ->
+                RootCauseResult(
+                    rootCause = rootCause,
+                    score = score,
+                    confidence = score / totalScore,
+                    reason = createReason(
+                        rootCause = rootCause,
+                        score = score,
+                        confidence = score / totalScore
+                    )
+                )
+            }
+    }
+
+    private fun createReason(
+        rootCause: RootCause,
+        score: Double,
+        confidence: Double
+    ): String =
+        when (rootCause) {
+            is RootCause.NodeCause ->
+                "Node ${rootCause.node.id} has accumulated a score of ${"%.2f".format(score)} from reported symptoms and neighbouring topology impact."
+
+            is RootCause.LinkCause ->
+                "Link ${rootCause.link.first.id}-${rootCause.link.second.id} was directly reported as down."
+
+            is RootCause.LinkGroupCause ->
+                "Several links connected to node ${rootCause.node.id} show issues."
+        }
 
     companion object {
         fun defaultWeights(): Map<EventType, Int> =
@@ -53,26 +90,4 @@ class RootCauseAnalyzer(
                 EventType.DEGRADED to 1
             )
     }
-}
-
-private fun createRootCauseResults(
-    scores: Map<Node, Double>,
-    reason: String
-): List<RootCauseResult> {
-    val totalScore = scores.values.sum()
-
-    if (totalScore == 0.0) {
-        return emptyList()
-    }
-
-    return scores.entries
-        .sortedByDescending { it.value }
-        .map { (node, score) ->
-            RootCauseResult(
-                node = node,
-                score = score,
-                confidence = score / totalScore, // ToDo: Very simplistic confidence scoring, improve?
-                reason = reason
-            )
-        }
 }

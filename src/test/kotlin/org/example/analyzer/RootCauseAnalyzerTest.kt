@@ -7,6 +7,7 @@ import org.example.domain.Link
 import org.example.domain.NetworkEvent
 import org.example.domain.NetworkGraph
 import org.example.domain.Node
+import org.example.domain.RootCause
 import java.time.Instant
 
 class RootCauseAnalyzerTest : FreeSpec({
@@ -15,11 +16,17 @@ class RootCauseAnalyzerTest : FreeSpec({
 
     "findRootCause" - {
         "no events should return null" {
-            analyzer.findRootCause(events = emptyList()) shouldBe null
+            val graph = NetworkGraph.fromLinks(links = emptyList())
+
+            analyzer.findRootCause(
+                events = emptyList(),
+                graph = graph
+            ) shouldBe null
         }
 
-        "single event without target should return the node itself" {
+        "single event without target should return the node itself as root cause" {
             val nodeC = Node(id = "C")
+            val graph = NetworkGraph.fromLinks(links = emptyList())
 
             val events = listOf(
                 NetworkEvent(
@@ -29,12 +36,21 @@ class RootCauseAnalyzerTest : FreeSpec({
                 )
             )
 
-            analyzer.findRootCause(events = events) shouldBe nodeC
+            analyzer.findRootCause(
+                events = events,
+                graph = graph
+            ) shouldBe RootCause.NodeCause(node = nodeC)
         }
 
-        "event with target should return target node" {
+        "link down event with target should return the link as root cause" {
             val nodeA = Node(id = "A")
             val nodeB = Node(id = "B")
+
+            val graph = NetworkGraph.fromLinks(
+                links = listOf(
+                    Link(first = nodeA, second = nodeB)
+                )
+            )
 
             val events = listOf(
                 NetworkEvent(
@@ -45,32 +61,17 @@ class RootCauseAnalyzerTest : FreeSpec({
                 )
             )
 
-            analyzer.findRootCause(events = events) shouldBe nodeB
-        }
-
-        "node with highest total score should be returned" {
-            val nodeA = Node(id = "A")
-            val nodeC = Node(id = "C")
-
-            val events = listOf(
-                NetworkEvent(
-                    node = nodeA,
-                    type = EventType.DEGRADED,
-                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
-                ),
-                NetworkEvent(
-                    node = nodeC,
-                    type = EventType.LINK_DOWN,
-                    timestamp = Instant.parse("2026-01-01T10:01:00Z")
-                )
+            analyzer.findRootCause(
+                events = events,
+                graph = graph
+            ) shouldBe RootCause.LinkCause(
+                link = Link(first = nodeA, second = nodeB)
             )
-
-            analyzer.findRootCause(events = events) shouldBe nodeC
         }
     }
 
     "findRootCauseResults" - {
-        "should return ranked time and topology aware results with confidence" {
+        "should return ranked root cause results with confidence" {
             val nodeA = Node(id = "A")
             val nodeB = Node(id = "B")
 
@@ -96,15 +97,15 @@ class RootCauseAnalyzerTest : FreeSpec({
 
             results.size shouldBe 2
 
-            results[0].node shouldBe nodeA
+            results[0].rootCause shouldBe RootCause.LinkCause(
+                link = Link(first = nodeA, second = nodeB)
+            )
             results[0].score shouldBe 3.0
             results[0].confidence shouldBe 0.6666666666666666
 
-            results[1].node shouldBe nodeB
+            results[1].rootCause shouldBe RootCause.NodeCause(node = nodeA)
             results[1].score shouldBe 1.5
             results[1].confidence shouldBe 0.3333333333333333
-
-            results[0].reason shouldBe "Score calculated using time and topology aware scoring"
         }
     }
 })
