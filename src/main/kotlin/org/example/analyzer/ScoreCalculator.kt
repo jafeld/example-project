@@ -10,14 +10,14 @@ class ScoreCalculator(
 ) {
 
     // Initial scoring approach. Not time or topology aware
-    fun calculateSimpleScores(events: List<NetworkEvent>): Map<Node, Int> {
-        val scores = mutableMapOf<Node, Int>()
+    fun calculateSimpleScores(events: List<NetworkEvent>): Map<Node, Double> {
+        val scores = mutableMapOf<Node, Double>()
 
         for (event in events) {
-            val weight = weights[event.type] ?: 0 // Default to 0 if weight is undefined
+            val weight = (weights[event.type] ?: 0).toDouble() // Default to 0 if weight is undefined
             val targetNode = event.target ?: event.node // If target exists, score target. Otherwise score reporting node.
 
-            scores[targetNode] = scores.getOrDefault(key = targetNode, defaultValue = 0) + weight
+            scores[targetNode] = scores.getOrDefault(key = targetNode, defaultValue = 0.0) + weight
         }
 
         return scores
@@ -26,24 +26,24 @@ class ScoreCalculator(
     fun calculateTopologyAwareScores(
         events: List<NetworkEvent>,
         graph: NetworkGraph
-    ): Map<Node, Int> {
+    ): Map<Node, Double> {
         val scores = calculateSimpleScores(events = events).toMutableMap()
 
         for (event in events) {
-            val weight = weights[event.type] ?: 0
+            val weight = (weights[event.type] ?: 0).toDouble()
             val targetNode = event.target ?: event.node
-            val neighbourScore = weight / 2
+            val neighbourScore = weight / 2.0
 
             for (neighbor in graph.neighborsOf(node = targetNode)) {
-                scores[neighbor] = scores.getOrDefault(key = neighbor, defaultValue = 0) + neighbourScore
+                scores[neighbor] = scores.getOrDefault(key = neighbor, defaultValue = 0.0) + neighbourScore
             }
         }
 
         return scores
     }
 
-    fun calculateTimeAwareScores(events: List<NetworkEvent>): Map<Node, Int> {
-        val scores = mutableMapOf<Node, Int>()
+    fun calculateTimeAwareScores(events: List<NetworkEvent>): Map<Node, Double> {
+        val scores = mutableMapOf<Node, Double>()
 
         if (events.isEmpty()) {
             return scores
@@ -62,7 +62,7 @@ class ScoreCalculator(
 
             val targetNode = event.target ?: event.node
 
-            scores[targetNode] = scores.getOrDefault(key = targetNode, defaultValue = 0) + weight
+            scores[targetNode] = scores.getOrDefault(key = targetNode, defaultValue = 0.0) + weight
         }
 
         return scores
@@ -71,7 +71,7 @@ class ScoreCalculator(
     fun calculateTimeAndTopologyAwareScores(
         events: List<NetworkEvent>,
         graph: NetworkGraph
-    ): Map<Node, Int> {
+    ): Map<Node, Double> {
         val scores = calculateTimeAwareScores(events = events).toMutableMap()
 
         if (events.isEmpty()) {
@@ -90,10 +90,10 @@ class ScoreCalculator(
             )
 
             val targetNode = event.target ?: event.node
-            val neighbourScore = weight / 2
+            val neighbourScore = weight / 2.0
 
             for (neighbor in graph.neighborsOf(node = targetNode)) {
-                scores[neighbor] = scores.getOrDefault(key = neighbor, defaultValue = 0) + neighbourScore
+                scores[neighbor] = scores.getOrDefault(key = neighbor, defaultValue = 0.0) + neighbourScore
             }
         }
 
@@ -104,19 +104,22 @@ class ScoreCalculator(
         event: NetworkEvent,
         earliestTimestamp: Long,
         timeWindow: Long
-    ): Int {
-        val baseWeight = weights[event.type] ?: 0
+    ): Double {
+        val baseWeight = (weights[event.type] ?: 0).toDouble()
 
-        if (baseWeight == 0) {
-            return 0
+        if (baseWeight == 0.0) {
+            return 0.0
         }
 
         val eventOffset = event.timestamp.toEpochMilli() - earliestTimestamp
         val eventPosition = eventOffset.toDouble() / timeWindow.toDouble()
 
         // Earlier events keep more weight. Later events are reduced, but still count.
+        // If first event, time factor is 1.0
+        // If middle event, time factor is 0.75
+        // If last event, time factor is 0.5
         val timeFactor = 1.0 - (eventPosition * 0.5)
 
-        return (baseWeight * timeFactor).toInt().coerceAtLeast(minimumValue = 1)
+        return (baseWeight * timeFactor).coerceAtLeast(minimumValue = 1.0)
     }
 }

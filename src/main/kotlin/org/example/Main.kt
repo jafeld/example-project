@@ -76,7 +76,7 @@ fun main() {
     }
 }
 
-private fun printScores(scores: Map<org.example.domain.Node, Int>) {
+private fun printScores(scores: Map<org.example.domain.Node, Double>) {
     scores.entries
         .sortedByDescending { it.value }
         .forEach { (node, score) ->

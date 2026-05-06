@@ -32,7 +32,7 @@ class ScoreCalculatorTest : FreeSpec({
             )
 
             scoreCalculator.calculateSimpleScores(events = events) shouldBe mapOf(
-                nodeC to 3
+                nodeC to 3.0
             )
         }
 
@@ -50,7 +50,7 @@ class ScoreCalculatorTest : FreeSpec({
             )
 
             scoreCalculator.calculateSimpleScores(events = events) shouldBe mapOf(
-                nodeB to 3
+                nodeB to 3.0
             )
         }
 
@@ -76,7 +76,7 @@ class ScoreCalculatorTest : FreeSpec({
             )
 
             scoreCalculator.calculateSimpleScores(events = events) shouldBe mapOf(
-                nodeC to 6
+                nodeC to 6.0
             )
         }
 
@@ -92,7 +92,7 @@ class ScoreCalculatorTest : FreeSpec({
             )
 
             scoreCalculator.calculateSimpleScores(events = events) shouldBe mapOf(
-                nodeC to 0
+                nodeC to 0.0
             )
         }
     }
@@ -123,9 +123,42 @@ class ScoreCalculatorTest : FreeSpec({
                 events = events,
                 graph = graph
             ) shouldBe mapOf(
-                nodeA to 3,
-                nodeB to 1,
-                nodeC to 1
+                nodeA to 3.0,
+                nodeB to 1.5,
+                nodeC to 1.5
+            )
+        }
+
+        "should combine direct score and neighbour score" {
+            val nodeA = Node(id = "A")
+            val nodeB = Node(id = "B")
+
+            val graph = NetworkGraph.fromLinks(
+                links = listOf(
+                    Link(first = nodeA, second = nodeB)
+                )
+            )
+
+            val events = listOf(
+                NetworkEvent(
+                    node = nodeB,
+                    target = nodeA,
+                    type = EventType.LINK_DOWN,
+                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
+                ),
+                NetworkEvent(
+                    node = nodeB,
+                    type = EventType.DEGRADED,
+                    timestamp = Instant.parse("2026-01-01T10:01:00Z")
+                )
+            )
+
+            scoreCalculator.calculateTopologyAwareScores(
+                events = events,
+                graph = graph
+            ) shouldBe mapOf(
+                nodeA to 3.5,
+                nodeB to 2.5
             )
         }
     }
@@ -148,7 +181,7 @@ class ScoreCalculatorTest : FreeSpec({
             )
 
             scoreCalculator.calculateTimeAwareScores(events = events) shouldBe mapOf(
-                nodeC to 4
+                nodeC to 4.0
             )
         }
     }
@@ -182,8 +215,8 @@ class ScoreCalculatorTest : FreeSpec({
                 events = events,
                 graph = graph
             ) shouldBe mapOf(
-                nodeA to 3,
-                nodeB to 2
+                nodeA to 3.5,
+                nodeB to 2.5
             )
         }
     }
