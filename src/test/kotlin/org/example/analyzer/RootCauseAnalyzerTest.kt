@@ -3,7 +3,9 @@ package org.example.analyzer
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import org.example.domain.EventType
+import org.example.domain.Link
 import org.example.domain.NetworkEvent
+import org.example.domain.NetworkGraph
 import org.example.domain.Node
 import java.time.Instant
 
@@ -171,6 +173,94 @@ class RootCauseAnalyzerTest : StringSpec({
 
             analyzer.calculateScores(events = events) shouldBe mapOf(
                 nodeC to 0
+            )
+        }
+    }
+
+    "calculateScores with graph" {
+
+        "should add reduced score to neighbours of the target node" {
+            val nodeA = Node(id = "A")
+            val nodeB = Node(id = "B")
+            val nodeC = Node(id = "C")
+
+            val graph = NetworkGraph.fromLinks(
+                links = listOf(
+                    Link(first = nodeA, second = nodeB),
+                    Link(first = nodeA, second = nodeC)
+                )
+            )
+
+            val events = listOf(
+                NetworkEvent(
+                    node = nodeB,
+                    target = nodeA,
+                    type = EventType.LINK_DOWN,
+                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
+                )
+            )
+
+            analyzer.calculateScores(
+                events = events,
+                graph = graph
+            ) shouldBe mapOf(
+                nodeA to 3,
+                nodeB to 1,
+                nodeC to 1
+            )
+        }
+
+        "should combine direct score and neighbour score" {
+            val nodeA = Node(id = "A")
+            val nodeB = Node(id = "B")
+
+            val graph = NetworkGraph.fromLinks(
+                links = listOf(
+                    Link(first = nodeA, second = nodeB)
+                )
+            )
+
+            val events = listOf(
+                NetworkEvent(
+                    node = nodeB,
+                    target = nodeA,
+                    type = EventType.LINK_DOWN,
+                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
+                ),
+                NetworkEvent(
+                    node = nodeB,
+                    type = EventType.DEGRADED,
+                    timestamp = Instant.parse("2026-01-01T10:01:00Z")
+                )
+            )
+
+            analyzer.calculateScores(
+                events = events,
+                graph = graph
+            ) shouldBe mapOf(
+                nodeA to 3,
+                nodeB to 2
+            )
+        }
+
+        "should return same direct scores when target has no neighbours" {
+            val nodeA = Node(id = "A")
+
+            val graph = NetworkGraph.fromLinks(links = emptyList())
+
+            val events = listOf(
+                NetworkEvent(
+                    node = nodeA,
+                    type = EventType.LINK_DOWN,
+                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
+                )
+            )
+
+            analyzer.calculateScores(
+                events = events,
+                graph = graph
+            ) shouldBe mapOf(
+                nodeA to 3
             )
         }
     }
