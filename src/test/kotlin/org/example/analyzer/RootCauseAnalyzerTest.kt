@@ -1,6 +1,6 @@
 package org.example.analyzer
 
-import io.kotest.core.spec.style.StringSpec
+import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import org.example.domain.EventType
 import org.example.domain.Link
@@ -9,12 +9,12 @@ import org.example.domain.NetworkGraph
 import org.example.domain.Node
 import java.time.Instant
 
-class RootCauseAnalyzerTest : StringSpec({
+class RootCauseAnalyzerTest : FreeSpec({
 
     val analyzer = RootCauseAnalyzer()
 
     // ToDo: Move events out of tests and reuse for both functions?
-    "findRootCause" {
+    "findRootCause" - {
         "no events should return null" {
             analyzer.findRootCause(events = emptyList()) shouldBe null
         }
@@ -70,7 +70,7 @@ class RootCauseAnalyzerTest : StringSpec({
         }
     }
 
-    "calculateScores" {
+    "calculateScores" - {
         "no events should return empty map" {
             analyzer.calculateScores(events = emptyList()) shouldBe emptyMap()
         }
@@ -177,8 +177,7 @@ class RootCauseAnalyzerTest : StringSpec({
         }
     }
 
-    "calculateScores with graph" {
-
+    "calculateScores with graph" - {
         "should add reduced score to neighbours of the target node" {
             val nodeA = Node(id = "A")
             val nodeB = Node(id = "B")
