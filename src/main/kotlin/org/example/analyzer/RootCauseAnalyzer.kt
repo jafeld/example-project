@@ -4,6 +4,7 @@ import org.example.domain.EventType
 import org.example.domain.NetworkEvent
 import org.example.domain.NetworkGraph
 import org.example.domain.Node
+import org.example.domain.RootCauseResult
 
 class RootCauseAnalyzer(
     private val weights: Map<EventType, Int> = defaultWeights()
@@ -29,6 +30,21 @@ class RootCauseAnalyzer(
         return scores.maxByOrNull { it.value }?.key
     }
 
+    fun findRootCauseResults(
+        events: List<NetworkEvent>,
+        graph: NetworkGraph
+    ): List<RootCauseResult> {
+        val scores = scoreCalculator.calculateTimeAndTopologyAwareScores(
+            events = events,
+            graph = graph
+        )
+
+        return createRootCauseResults(
+            scores = scores,
+            reason = "Score calculated using time and topology aware scoring" // ToDo: Vague, improve better reasoning when possible
+        )
+    }
+
     companion object {
         fun defaultWeights(): Map<EventType, Int> =
             mapOf(
@@ -37,4 +53,26 @@ class RootCauseAnalyzer(
                 EventType.DEGRADED to 1
             )
     }
+}
+
+private fun createRootCauseResults(
+    scores: Map<Node, Double>,
+    reason: String
+): List<RootCauseResult> {
+    val totalScore = scores.values.sum()
+
+    if (totalScore == 0.0) {
+        return emptyList()
+    }
+
+    return scores.entries
+        .sortedByDescending { it.value }
+        .map { (node, score) ->
+            RootCauseResult(
+                node = node,
+                score = score,
+                confidence = score / totalScore, // ToDo: Very simplistic confidence scoring, improve?
+                reason = reason
+            )
+        }
 }

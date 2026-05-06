@@ -9,6 +9,8 @@ import org.example.database.createTables
 import org.example.database.seedDemoData
 import org.example.domain.EventType
 import org.example.domain.NetworkGraph
+import org.example.domain.Node
+import org.example.domain.RootCauseResult
 
 fun main() {
     Database.startServer()
@@ -65,21 +67,32 @@ fun main() {
         printScores(scores = timeAndTopologyScores)
 
         println()
-        println("Possible root causes")
-        println("Simple: ${analyzer.findRootCause(events = events)}")
-        println("Time + Topology: ${
-            analyzer.findRootCause(
-                events = events,
-                graph = graph
-            )
-        }")
+        val rootCauseResults = analyzer.findRootCauseResults(
+            events = events,
+            graph = graph
+        )
+
+        println()
+        println("Root cause candidates")
+        printRootCauseResults(results = rootCauseResults)
     }
 }
 
-private fun printScores(scores: Map<org.example.domain.Node, Double>) {
+private fun printScores(scores: Map<Node, Double>) {
     scores.entries
         .sortedByDescending { it.value }
         .forEach { (node, score) ->
-            println("$node: $score")
+            println("${node.id}: ${"%.2f".format(score)}")
         }
+}
+
+private fun printRootCauseResults(results: List<RootCauseResult>) {
+    results.forEach { result ->
+        println(
+            "${result.node.id}: " +
+                    "score=${"%.2f".format(result.score)}, " +
+                    "confidence=${"%.2f".format(result.confidence)}, " +
+                    "reason=${result.reason}"
+        )
+    }
 }
