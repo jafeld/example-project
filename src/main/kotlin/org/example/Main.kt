@@ -65,7 +65,7 @@ fun main() {
         printScores(scores = timeAndTopologyScores)
 
         println()
-        println("Root causes")
+        println("Possible root causes")
         println("Simple: ${analyzer.findRootCause(events = events)}")
         println("Time + Topology: ${
             analyzer.findRootCause(

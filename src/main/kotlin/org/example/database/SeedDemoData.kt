@@ -24,6 +24,14 @@ fun seedDemoData(connection: Connection) {
     insertEvent(connection, node = "A", target = "C", type = "LINK_DOWN", time = startTime)
     insertEvent(connection, node = "B", target = "C", type = "NODE_UNREACHABLE", time = startTime.plusSeconds(1))
     insertEvent(connection, node = "D", target = "C", type = "NODE_UNREACHABLE", time = startTime.plusSeconds(2))
+
+    insertEvent(connection, node = "A", target = "B", type = "LINK_DOWN", time = startTime.plusSeconds(3))
+    insertEvent(connection, node = "C", target = "B", type = "DEGRADED", time = startTime.plusSeconds(4))
+
+    insertEvent(connection, node = "D", target = null, type = "DEGRADED", time = startTime.plusSeconds(8))
+    insertEvent(connection, node = "B", target = null, type = "DEGRADED", time = startTime.plusSeconds(9))
+
+    insertEvent(connection, node = "C", target = "A", type = "LINK_UP", time = startTime.plusSeconds(10))
 }
 
 private fun hasNodes(connection: Connection): Boolean {
