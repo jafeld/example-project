@@ -3,7 +3,9 @@ package org.example.analyzer
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import org.example.domain.EventType
+import org.example.domain.Link
 import org.example.domain.NetworkEvent
+import org.example.domain.NetworkGraph
 import org.example.domain.Node
 import java.time.Instant
 
@@ -64,6 +66,45 @@ class RootCauseAnalyzerTest : FreeSpec({
             )
 
             analyzer.findRootCause(events = events) shouldBe nodeC
+        }
+    }
+
+    "findRootCauseResults" - {
+        "should return ranked time and topology aware results with confidence" {
+            val nodeA = Node(id = "A")
+            val nodeB = Node(id = "B")
+
+            val graph = NetworkGraph.fromLinks(
+                links = listOf(
+                    Link(first = nodeA, second = nodeB)
+                )
+            )
+
+            val events = listOf(
+                NetworkEvent(
+                    node = nodeB,
+                    target = nodeA,
+                    type = EventType.LINK_DOWN,
+                    timestamp = Instant.parse("2026-01-01T10:00:00Z")
+                )
+            )
+
+            val results = analyzer.findRootCauseResults(
+                events = events,
+                graph = graph
+            )
+
+            results.size shouldBe 2
+
+            results[0].node shouldBe nodeA
+            results[0].score shouldBe 3.0
+            results[0].confidence shouldBe 0.6666666666666666
+
+            results[1].node shouldBe nodeB
+            results[1].score shouldBe 1.5
+            results[1].confidence shouldBe 0.3333333333333333
+
+            results[0].reason shouldBe "Score calculated using time and topology aware scoring"
         }
     }
 })
