@@ -7,9 +7,9 @@ import org.example.domain.RootCause
 import org.example.domain.RootCauseResult
 
 class RootCauseAnalyzer(
-    private val weights: Map<EventType, Int> = defaultWeights()
+    private val config: ScoringConfig = ScoringConfig()
 ) {
-    private val scoreCalculator = ScoreCalculator(weights = weights)
+    private val scoreCalculator = ScoreCalculator(config = config)
 
     fun findRootCause(
         events: List<NetworkEvent>,
@@ -26,7 +26,7 @@ class RootCauseAnalyzer(
     fun findRootCauseResults(
         events: List<NetworkEvent>,
         graph: NetworkGraph,
-        maxCandidates: Int = 3
+        maxCandidates: Int = config.maxCandidates
     ): List<RootCauseResult> {
         val scores = scoreCalculator.calculateScores(
             events = events,
@@ -60,7 +60,6 @@ class RootCauseAnalyzer(
                     reason = createReason(
                         rootCause = rootCause,
                         score = score,
-                        confidence = score / totalScore
                     )
                 )
             }
@@ -69,7 +68,6 @@ class RootCauseAnalyzer(
     private fun createReason(
         rootCause: RootCause,
         score: Double,
-        confidence: Double
     ): String =
         when (rootCause) {
             is RootCause.NodeCause ->
@@ -81,13 +79,4 @@ class RootCauseAnalyzer(
             is RootCause.LinkGroupCause ->
                 "Several links connected to node ${rootCause.node.id} show issues."
         }
-
-    companion object {
-        fun defaultWeights(): Map<EventType, Int> =
-            mapOf(
-                EventType.LINK_DOWN to 3,
-                EventType.NODE_UNREACHABLE to 2,
-                EventType.DEGRADED to 1
-            )
-    }
 }

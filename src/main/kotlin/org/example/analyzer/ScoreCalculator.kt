@@ -8,7 +8,7 @@ import org.example.domain.Node
 import org.example.domain.RootCause
 
 class ScoreCalculator(
-    private val weights: Map<EventType, Int>
+    private val config: ScoringConfig = ScoringConfig()
 ) {
 
     fun calculateScores(
@@ -99,11 +99,10 @@ class ScoreCalculator(
 
             // If several events point to the same target node, the node itself is a possible cause.
             // Scoring weight of 0.5 is because this is only inferred evidence, not direct.
-            // ToDo: Move weight out, possibly as a run config parameter
             addScore(
                 scores = scores,
                 rootCause = RootCause.NodeCause(node = targetNode),
-                score = weight / 2.0
+                score = weight * config.inferredNodeWeightFactor
             )
 
             // For LINK_DOWN events, only add to linkIssues if target is a direct neighbour
@@ -132,16 +131,14 @@ class ScoreCalculator(
                 .mapValues { (_, scores) -> scores.sum() }
 
             // A group cause only make sense when multiple distinct links have issues to the same node
-            // ToDo: Move value to a global/run config parameter
-            if (distinctLinksWithScores.size < 2) {
+            if (distinctLinksWithScores.size < config.minimumLinksForGroupCause) {
                 continue
             }
 
             // Add weight to the group of links
             // Reduced grouped score because this is an inferred hypothesis
-            // ToDo: Move value to a global/run config parameter (and lower value?)
             val links = distinctLinksWithScores.keys.toList()
-            val groupScore = distinctLinksWithScores.values.sum() * 0.75
+            val groupScore = distinctLinksWithScores.values.sum() * config.linkGroupWeightFactor
 
             addScore(
                 scores = scores,
@@ -174,7 +171,7 @@ class ScoreCalculator(
         earliestTimestamp: Long,
         timeWindow: Long
     ): Double {
-        val baseWeight = (weights[event.type] ?: 0).toDouble()
+        val baseWeight = (config.eventWeights[event.type] ?: 0).toDouble()
 
         if (baseWeight == 0.0) {
             return 0.0
